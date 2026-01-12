@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日菜谱推荐 - 健康美味每一天</title>
+    <link rel="stylesheet" href="static/css/style.css?v=3.1">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header>
+            <h1>🍳 每日菜谱推荐</h1>
+            <div class="date-info">
+                <span id="current-date">📅 加载中...</span>
+                <span id="lunar-date">🏮 加载中...</span>
+            </div>
+        </header>
+
+        <!-- 控制面板 -->
+        <div class="control-panel">
+            <button class="toggle-btn" id="diet-toggle" title="点击切换饮食模式">
+                🍜 <span id="diet-text">中餐</span>
+            </button>
+            <button class="refresh-btn" id="refresh-btn" title="刷新今日推荐">🔄 刷新推荐</button>
+            <div class="tip-text">💡 点击左侧按钮可切换地中海饮食</div>
+        </div>
+
+        <!-- 搜索栏 -->
+        <div class="search-panel">
+            <input type="text" id="search-input" placeholder="🔍 输入蔬菜名或菜名搜索（例如：黄瓜、鱼香肉丝）">
+            <button id="search-btn">搜索</button>
+        </div>
+
+        <!-- 节日提示 -->
+        <div id="festival-notice" class="festival-notice" style="display: none;">
+            🎉 <span id="festival-text"></span>
+        </div>
+
+        <!-- 主要内容区 -->
+        <main id="main-content">
+            <!-- 今日推荐 -->
+            <div id="recommendations">
+                <!-- 早餐 -->
+                <section class="meal-section">
+                    <h2>🌅 早餐推荐</h2>
+                    <div class="recipe-grid" id="breakfast-grid">
+                        <div class="loading">精心挑选中...</div>
+                    </div>
+                </section>
+
+                <!-- 午餐 -->
+                <section class="meal-section">
+                    <h2>🌞 午餐推荐</h2>
+                    <div class="recipe-grid" id="lunch-grid">
+                        <div class="loading">精心挑选中...</div>
+                    </div>
+                </section>
+
+                <!-- 晚餐 -->
+                <section class="meal-section">
+                    <h2>🌙 晚餐推荐</h2>
+                    <div class="recipe-grid" id="dinner-grid">
+                        <div class="loading">精心挑选中...</div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- 搜索结果 -->
+            <div id="search-results" style="display: none;">
+                <button id="back-btn" class="back-btn">← 返回今日推荐</button>
+                <h2 id="search-title" style="color: var(--primary-color); font-size: 32px; margin-bottom: 20px;"></h2>
+                <div class="recipe-detail-grid" id="search-grid"></div>
+            </div>
+        </main>
+
+        <!-- 菜谱详情弹窗 -->
+        <div id="recipe-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2 id="modal-recipe-name"></h2>
+                <div class="recipe-meta">
+                    <span class="tag" id="modal-calories"></span>
+                    <span class="tag" id="modal-season"></span>
+                </div>
+
+                <div class="ingredients-section">
+                    <h3>📋 所需食材（采购清单）</h3>
+                    <ul id="modal-ingredients"></ul>
+                </div>
+
+                <div class="steps-section">
+                    <h3>👨‍🍳 制作步骤</h3>
+                    <ol id="modal-steps"></ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- 页脚 -->
+        <footer>
+            <p>💚 为健康饮食而设计 | 💪 BMI友好推荐 | 🏮 农历节日智能推荐</p>
+        </footer>
+    </div>
+
+    <script src="static/js/app.js?v=3.0"></script>
+</body>
+</html>

@@ -1,0 +1,697 @@
+/* 全局样式 - 老人友好设计 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-color: #FF6B6B;
+    --secondary-color: #4ECDC4;
+    --accent-color: #FFE66D;
+    --success-color: #95E1D3;
+    --text-color: #2C3E50;
+    --bg-color: #FFF8F0;
+    --card-bg: white;
+    --shadow: 0 4px 15px rgba(0,0,0,0.08);
+    --shadow-hover: 0 8px 25px rgba(0,0,0,0.15);
+    --border-radius: 16px;
+}
+
+body {
+    font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    background: linear-gradient(135deg, #FFF8F0 0%, #FFE8E8 100%);
+    color: var(--text-color);
+    font-size: 18px;
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* 头部 */
+header {
+    background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+    color: white;
+    padding: 35px 30px;
+    border-radius: var(--border-radius);
+    text-align: center;
+    margin-bottom: 30px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+}
+
+header::before {
+    content: "🍜";
+    position: absolute;
+    font-size: 200px;
+    opacity: 0.1;
+    right: -50px;
+    top: -50px;
+}
+
+header h1 {
+    font-size: 46px;
+    margin-bottom: 15px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    animation: slideInDown 0.6s ease-out;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.date-info {
+    font-size: 22px;
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+    flex-wrap: wrap;
+    animation: fadeIn 1s ease-out;
+}
+
+.date-info span {
+    background: rgba(255,255,255,0.2);
+    padding: 8px 18px;
+    border-radius: 25px;
+    backdrop-filter: blur(10px);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* 控制面板 */
+.control-panel {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.tip-text {
+    color: #666;
+    font-size: 18px;
+    padding: 10px 20px;
+    background: rgba(255,255,255,0.8);
+    border-radius: 25px;
+    animation: fadeIn 1s ease-out;
+    border: 2px dashed rgba(255,107,107,0.3);
+}
+
+.toggle-btn, .refresh-btn {
+    flex: 1;
+    min-width: 200px;
+    padding: 20px 30px;
+    font-size: 24px;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+}
+
+.toggle-btn::before, .refresh-btn::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.toggle-btn:hover::before, .refresh-btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.toggle-btn {
+    background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+    color: white;
+}
+
+.toggle-btn:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: var(--shadow-hover);
+}
+
+.toggle-btn.mediterranean {
+    background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+}
+
+.refresh-btn {
+    background: linear-gradient(135deg, #FFE66D 0%, #FFAA00 100%);
+    color: var(--text-color);
+}
+
+.refresh-btn:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: var(--shadow-hover);
+}
+
+/* 搜索面板 */
+.search-panel {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 25px;
+    animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#search-input {
+    flex: 1;
+    padding: 20px 25px;
+    font-size: 20px;
+    border: 3px solid #FFE8E8;
+    border-radius: var(--border-radius);
+    outline: none;
+    transition: all 0.3s ease;
+    background: white;
+    box-shadow: var(--shadow);
+}
+
+#search-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(255,107,107,0.1);
+    transform: scale(1.01);
+}
+
+#search-btn {
+    padding: 20px 40px;
+    font-size: 24px;
+    background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow);
+}
+
+#search-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: var(--shadow-hover);
+}
+
+#search-btn:active {
+    transform: translateY(-1px) scale(1.02);
+}
+
+/* 节日提示 */
+.festival-notice {
+    background: linear-gradient(135deg, #FFE66D 0%, #FFAA00 100%);
+    color: var(--text-color);
+    padding: 20px;
+    border-radius: var(--border-radius);
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 25px;
+    box-shadow: var(--shadow);
+    animation: pulse 2s infinite;
+    border: 3px solid rgba(255,255,255,0.5);
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+/* 餐次板块 */
+.meal-section {
+    margin-bottom: 40px;
+    animation: fadeInScale 0.6s ease-out backwards;
+}
+
+.meal-section:nth-child(1) { animation-delay: 0.1s; }
+.meal-section:nth-child(2) { animation-delay: 0.2s; }
+.meal-section:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.meal-section h2 {
+    font-size: 36px;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    padding: 15px 20px;
+    background: white;
+    border-radius: var(--border-radius);
+    border-left: 8px solid var(--primary-color);
+    box-shadow: var(--shadow);
+    display: inline-block;
+}
+
+/* 菜谱网格 */
+.recipe-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 25px;
+}
+
+/* 菜谱卡片 */
+.recipe-card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 25px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 3px solid transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+.recipe-card::before {
+    content: "🍽️";
+    position: absolute;
+    font-size: 80px;
+    opacity: 0.05;
+    right: -10px;
+    bottom: -10px;
+    transition: all 0.3s ease;
+}
+
+.recipe-card:hover {
+    transform: translateY(-8px) scale(1.03);
+    box-shadow: var(--shadow-hover);
+    border-color: var(--primary-color);
+}
+
+.recipe-card:hover::before {
+    opacity: 0.1;
+    transform: scale(1.2) rotate(10deg);
+}
+
+.recipe-card h3 {
+    font-size: 28px;
+    color: var(--text-color);
+    margin-bottom: 15px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.recipe-card h3::before {
+    content: "•";
+    color: var(--primary-color);
+    font-size: 35px;
+}
+
+.recipe-tags {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+.tag {
+    display: inline-block;
+    padding: 8px 16px;
+    background-color: #E8F5E9;
+    color: var(--text-color);
+    border-radius: 25px;
+    font-size: 17px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.tag:hover {
+    transform: scale(1.1);
+}
+
+.tag.calories-low {
+    background: linear-gradient(135deg, #95E1D3 0%, #AAF683 100%);
+    color: #2C5F2D;
+}
+
+.tag.calories-medium {
+    background: linear-gradient(135deg, #FFE66D 0%, #FFAA00 100%);
+    color: #8B5A00;
+}
+
+.tag.calories-high {
+    background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+    color: white;
+}
+
+.recipe-card .ingredients-preview {
+    font-size: 18px;
+    color: #666;
+    margin-top: 12px;
+    line-height: 1.8;
+    padding: 12px;
+    background: rgba(255,235,235,0.3);
+    border-radius: 10px;
+    border-left: 4px solid var(--secondary-color);
+}
+
+/* 加载动画 */
+.loading {
+    text-align: center;
+    padding: 50px;
+    font-size: 24px;
+    color: #999;
+    animation: loadingPulse 1.5s infinite;
+}
+
+@keyframes loadingPulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+.loading::before {
+    content: "🍳";
+    font-size: 50px;
+    display: block;
+    margin-bottom: 20px;
+    animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* 返回按钮 */
+.back-btn {
+    padding: 18px 35px;
+    font-size: 22px;
+    background: linear-gradient(135deg, #95E1D3 0%, #AAF683 100%);
+    color: var(--text-color);
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    margin-bottom: 25px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow);
+}
+
+.back-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: var(--shadow-hover);
+}
+
+/* 搜索结果网格 */
+.recipe-detail-grid {
+    display: grid;
+    gap: 30px;
+}
+
+.recipe-detail-card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 30px;
+    box-shadow: var(--shadow);
+    border-left: 6px solid var(--primary-color);
+    transition: all 0.3s ease;
+}
+
+.recipe-detail-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateX(5px);
+}
+
+.recipe-detail-card h3 {
+    font-size: 30px;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.recipe-detail-card h3::before {
+    content: "🍽️";
+    font-size: 35px;
+}
+
+.recipe-detail-card h4 {
+    font-size: 24px;
+    color: var(--text-color);
+    margin: 20px 0 15px;
+    padding: 12px 15px;
+    background: linear-gradient(135deg, rgba(255,235,235,0.5) 0%, rgba(255,245,235,0.5) 100%);
+    border-radius: 10px;
+    border-left: 5px solid var(--secondary-color);
+}
+
+.recipe-detail-card ul, .recipe-detail-card ol {
+    padding-left: 30px;
+}
+
+.recipe-detail-card li {
+    font-size: 20px;
+    margin-bottom: 12px;
+    line-height: 1.8;
+    padding: 8px;
+    background: rgba(255,250,245,0.5);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.recipe-detail-card li:hover {
+    background: rgba(255,235,235,0.5);
+    transform: translateX(5px);
+}
+
+/* 弹窗样式 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    overflow-y: auto;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.modal-content {
+    background: linear-gradient(135deg, #FFFFFF 0%, #FFF8F0 100%);
+    margin: 50px auto;
+    padding: 40px;
+    border-radius: var(--border-radius);
+    max-width: 850px;
+    position: relative;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.4);
+    animation: slideInDown 0.4s ease-out;
+}
+
+.close {
+    position: absolute;
+    right: 30px;
+    top: 25px;
+    font-size: 45px;
+    font-weight: bold;
+    color: #999;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255,107,107,0.1);
+}
+
+.close:hover {
+    color: var(--primary-color);
+    background: rgba(255,107,107,0.2);
+    transform: rotate(90deg) scale(1.1);
+}
+
+#modal-recipe-name {
+    font-size: 38px;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 4px solid rgba(255,107,107,0.2);
+}
+
+.recipe-meta {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.ingredients-section, .steps-section {
+    margin-bottom: 30px;
+    padding: 25px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.ingredients-section h3, .steps-section h3 {
+    font-size: 28px;
+    color: var(--text-color);
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 3px solid rgba(78,205,196,0.3);
+}
+
+#modal-ingredients, #modal-steps {
+    padding-left: 30px;
+}
+
+#modal-ingredients li, #modal-steps li {
+    font-size: 21px;
+    margin-bottom: 15px;
+    line-height: 1.8;
+    padding: 10px;
+    background: rgba(255,250,245,0.7);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+#modal-ingredients li:hover, #modal-steps li:hover {
+    background: rgba(255,235,235,0.7);
+    transform: translateX(5px);
+}
+
+/* 页脚 */
+footer {
+    text-align: center;
+    padding: 30px;
+    margin-top: 50px;
+    color: #666;
+    font-size: 20px;
+    border-top: 3px solid rgba(255,107,107,0.2);
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+}
+
+footer p {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 34px;
+    }
+
+    .date-info {
+        font-size: 18px;
+    }
+
+    .toggle-btn, .refresh-btn, #search-btn {
+        font-size: 20px;
+        padding: 16px 22px;
+        min-width: 150px;
+    }
+
+    #search-input {
+        font-size: 18px;
+        padding: 16px 20px;
+    }
+
+    .meal-section h2 {
+        font-size: 28px;
+    }
+
+    .recipe-card h3 {
+        font-size: 24px;
+    }
+
+    .recipe-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-content {
+        margin: 20px;
+        padding: 25px;
+    }
+
+    #modal-recipe-name {
+        font-size: 28px;
+    }
+}
+
+/* 打印样式 */
+@media print {
+    body {
+        background: white;
+    }
+
+    .control-panel, .search-panel, footer {
+        display: none;
+    }
+
+    .recipe-card {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+    width: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: #FFF8F0;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #FF5252 0%, #FF7043 100%);
+}

@@ -1,0 +1,5 @@
+﻿Flask==3.0.0
+Flask-CORS==4.0.0
+lunar-python==1.4.8
+requests==2.31.0
+gunicorn==21.2.0
