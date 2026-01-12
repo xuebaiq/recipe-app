@@ -5,4 +5,4 @@ requests==2.31.0
 gunicorn==21.2.0
 
 # 主依赖文件 - 指向backend的requirements.txt
--r backend/requirements.txt
+#-r backend/requirements.txt
