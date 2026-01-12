@@ -1,5 +1,6 @@
 // 全局变量
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = '/api';
+//const API_BASE_URL = 'http://localhost:5000/api';
 let currentDietType = '中餐'; // 当前饮食类型
 let currentData = null; // 当前推荐数据
 
