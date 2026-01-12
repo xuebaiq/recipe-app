@@ -1,0 +1,2 @@
+# 主依赖文件 - 指向backend的requirements.txt
+-r backend/requirements.txt
