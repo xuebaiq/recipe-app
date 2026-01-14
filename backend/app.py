@@ -50,11 +50,11 @@ def get_lunar_info():
         today = datetime.now()
         solar = Solar.fromDate(today)
         lunar = Lunar.fromSolar(solar)
-        
+
         # 处理节日列表，防止返回 None 导致合并报错
         festivals = lunar.getFestivals() or []
         other_festivals = lunar.getOtherFestivals() or []
-        
+
         return {
             "lunar_date": f"{lunar.getMonthInChinese()}月{lunar.getDayInChinese()}",
             "festival": festivals + other_festivals,
@@ -78,7 +78,7 @@ def get_season():
 def recommend_recipes(diet_type="中餐", meal_time="午餐"):
     lunar_info = get_lunar_info()
     season = get_season()
-    
+
     # 基础筛选
     filtered = [r for r in RECIPES if r.get('category') == diet_type and meal_time in r.get('meal_type', [])]
     if not filtered: return []
@@ -92,7 +92,7 @@ def recommend_recipes(diet_type="中餐", meal_time="午餐"):
     # 时令优先
     seasonal_pool = [r for r in filtered if season in r.get('season', '全年') and r not in recommended]
     random.shuffle(seasonal_pool)
-    
+
     # 设定推荐数量
     limit = 7 if diet_type == "中餐" else 4
     recommended.extend(seasonal_pool[:limit - len(recommended)])
