@@ -1,330 +1,246 @@
 # -*- coding: utf-8 -*-
-"""
-菜谱推荐系统 - Flask后端
-"""
-from flask import Flask, jsonify, request, send_from_directory
-from flask_cors import CORS
-import json
 import os
-from datetime import datetime
+import json
 import random
 import requests
+from datetime import datetime
+from flask import Flask, jsonify, request, send_from_directory
+from flask_cors import CORS
 from lunar_python import Lunar, Solar
+from dotenv import load_dotenv
 
-# 配置Flask指向frontend目录
-frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend')
+# 加载 .env 文件
+load_dotenv()
+
+# --- 1. 路径自动适配逻辑 ---
+# 获取当前 app.py 所在的绝对路径
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# 自动定位前端文件夹 (假设结构是 recipe-app/backend/app.py 和 recipe-app/frontend/)
+PARENT_DIR = os.path.dirname(BASE_DIR)
+frontend_dir = os.path.join(PARENT_DIR, 'frontend')
+
 app = Flask(__name__,
             static_folder=os.path.join(frontend_dir, 'static'),
             template_folder=frontend_dir)
-CORS(app)  # 允许跨域请求
+CORS(app)  # 开启跨域，确保手机能连上
 
-# 加载菜谱数据
+# --- 2. 数据库加载逻辑 (多路径兼容) ---
 def load_recipes():
-    """加载菜谱数据"""
-    json_path = os.path.join(os.path.dirname(__file__), 'data', 'recipes.json')
-    with open(json_path, 'r', encoding='utf-8') as f:
-        return json.load(f)
+    """多路径尝试加载 recipes.json"""
+    paths_to_try = [
+        os.path.join(BASE_DIR, 'recipes.json'),
+        os.path.join(BASE_DIR, 'data', 'recipes.json'),
+        os.path.join(PARENT_DIR, 'recipes.json')
+    ]
+    for path in paths_to_try:
+        if os.path.exists(path):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception as e:
+                print(f"读取 {path} 出错: {e}")
+    return []
 
 RECIPES = load_recipes()
 
-# 节日菜谱映射
-FESTIVAL_FOODS = {
-    "春节": ["饺子", "年糕", "鱼"],
-    "元宵节": ["元宵", "汤圆"],
-    "清明节": ["青团"],
-    "端午节": ["粽子"],
-    "中秋节": ["月饼"],
-    "冬至": ["饺子", "汤圆"],
-    "腊八节": ["八宝粥"],
-    "除夕": ["饺子", "年夜饭"]
-}
-
-# 时令蔬菜推荐
-SEASONAL_INGREDIENTS = {
-    "春季": ["韭菜", "菠菜", "春笋", "荠菜", "豌豆"],
-    "夏季": ["黄瓜", "番茄", "茄子", "豆角", "空心菜"],
-    "秋季": ["南瓜", "红薯", "莲藕", "芋头", "白菜"],
-    "冬季": ["白菜", "萝卜", "土豆", "山药", "菠菜"]
-}
-
+# --- 3. 农历与季节逻辑 ---
 def get_lunar_info():
-    """获取农历信息"""
-    today = datetime.now()
-    solar = Solar.fromDate(today)
-    lunar = Lunar.fromSolar(solar)
-
-    return {
-        "lunar_date": f"{lunar.getMonthInChinese()}月{lunar.getDayInChinese()}",
-        "festival": lunar.getFestivals() + lunar.getOtherFestivals(),
-        "solar_term": lunar.getJieQi(),
-        "year": lunar.getYearInGanZhi(),
-        "month": lunar.getMonth(),
-        "day": lunar.getDay()
-    }
+    """获取农历信息，增加完善的错误保护"""
+    try:
+        today = datetime.now()
+        solar = Solar.fromDate(today)
+        lunar = Lunar.fromSolar(solar)
+        
+        # 处理节日列表，防止返回 None 导致合并报错
+        festivals = lunar.getFestivals() or []
+        other_festivals = lunar.getOtherFestivals() or []
+        
+        return {
+            "lunar_date": f"{lunar.getMonthInChinese()}月{lunar.getDayInChinese()}",
+            "festival": festivals + other_festivals,
+            "solar_term": lunar.getJieQi() or "",
+            "year": lunar.getYearInGanZhi(),
+            "month": lunar.getMonth(),
+            "day": lunar.getDay()
+        }
+    except Exception as e:
+        print(f"农历转换出错: {e}")
+        return {"lunar_date": "加载中", "festival": [], "solar_term": ""}
 
 def get_season():
-    """根据农历获取季节"""
     month = datetime.now().month
-    if month in [3, 4, 5]:
-        return "春季"
-    elif month in [6, 7, 8]:
-        return "夏季"
-    elif month in [9, 10, 11]:
-        return "秋季"
-    else:
-        return "冬季"
+    if month in [3, 4, 5]: return "春季"
+    elif month in [6, 7, 8]: return "夏季"
+    elif month in [9, 10, 11]: return "秋季"
+    else: return "冬季"
 
+# --- 4. 推荐核心逻辑 ---
 def recommend_recipes(diet_type="中餐", meal_time="午餐"):
-    """
-    推荐菜谱
-    :param diet_type: 饮食类型（中餐/地中海）
-    :param meal_time: 餐次（早餐/午餐/晚餐）
-    :return: 推荐的菜谱列表
-    """
     lunar_info = get_lunar_info()
     season = get_season()
+    
+    # 基础筛选
+    filtered = [r for r in RECIPES if r.get('category') == diet_type and meal_time in r.get('meal_type', [])]
+    if not filtered: return []
 
-    # 筛选符合条件的菜谱
-    filtered = [r for r in RECIPES
-                if r['category'] == diet_type
-                and meal_time in r['meal_type']]
-
-    # 优先推荐节日菜
-    festival_recipes = []
-    if lunar_info['festival']:
-        for festival in lunar_info['festival']:
-            festival_recipes = [r for r in filtered if r.get('festival') and festival in r.get('festival', '')]
-
-    # 推荐时令菜
-    seasonal_recipes = [r for r in filtered if season in r.get('season', '全年')]
-
-    # 根据BMI推荐低热量菜（BMI=34属于肥胖）
-    low_cal_recipes = [r for r in filtered if r['calories'] in ['低', '中']]
-
-    # 组合推荐
     recommended = []
+    # 节日优先
+    if lunar_info['festival']:
+        for f in lunar_info['festival']:
+            recommended.extend([r for r in filtered if r.get('festival') and f in r.get('festival')])
 
-    # 1. 节日菜优先
-    if festival_recipes:
-        recommended.extend(festival_recipes[:2])
-
-    # 2. 时令菜
-    remaining = 7 if diet_type == "中餐" else 4
-    seasonal_pool = [r for r in seasonal_recipes if r not in recommended]
+    # 时令优先
+    seasonal_pool = [r for r in filtered if season in r.get('season', '全年') and r not in recommended]
     random.shuffle(seasonal_pool)
-    recommended.extend(seasonal_pool[:remaining - len(recommended)])
+    
+    # 设定推荐数量
+    limit = 7 if diet_type == "中餐" else 4
+    recommended.extend(seasonal_pool[:limit - len(recommended)])
 
-    # 3. 补充健康低卡菜
-    if len(recommended) < remaining:
-        low_cal_pool = [r for r in low_cal_recipes if r not in recommended]
-        random.shuffle(low_cal_pool)
-        recommended.extend(low_cal_pool[:remaining - len(recommended)])
+    # 兜底：如果还没够，随机补齐
+    if len(recommended) < limit:
+        others = [r for r in filtered if r not in recommended]
+        random.shuffle(others)
+        recommended.extend(others[:limit - len(recommended)])
 
-    # 4. 如果还不够，随机补充
-    if len(recommended) < remaining:
-        other_pool = [r for r in filtered if r not in recommended]
-        random.shuffle(other_pool)
-        recommended.extend(other_pool[:remaining - len(recommended)])
+    return recommended[:limit]
 
-    return recommended[:remaining]
-
-def call_deepseek_api(prompt):
-    """
-    调用硅基流动的DeepSeek API
-    :param prompt: 提示词
-    :return: API返回的文本
-    """
-    api_key = os.environ.get('SILICONFLOW_API_KEY')
-
-    if not api_key:
-        return None
-
-    url = "https://api.siliconflow.cn/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-    data = {
-        "model": "deepseek-ai/DeepSeek-V3",
-        "messages": [
-            {
-                "role": "system",
-                "content": "你是一位专业的中餐和地中海饮食营养师，擅长制定健康菜谱。回答要简洁实用，适合给老人使用。"
-            },
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        "max_tokens": 2000,
-        "temperature": 0.7
-    }
-
-    try:
-        response = requests.post(url, headers=headers, json=data, timeout=30)
-        response.raise_for_status()
-        result = response.json()
-        return result['choices'][0]['message']['content']
-    except Exception as e:
-        print(f"API调用失败: {e}")
-        return None
-
-def search_in_database(keyword, recipe_type="菜名"):
-    """
-    在本地数据库中搜索
-    :param keyword: 关键词（蔬菜名或菜名）
-    :param recipe_type: 搜索类型（蔬菜/菜名）
-    :return: 匹配的菜谱
-    """
-    results = []
-
-    if recipe_type == "蔬菜":
-        # 搜索食材中包含该蔬菜的菜谱
-        for recipe in RECIPES:
-            if any(keyword in ingredient for ingredient in recipe['ingredients']):
-                results.append(recipe)
-    else:
-        # 搜索菜名
-        for recipe in RECIPES:
-            if keyword in recipe['name']:
-                results.append(recipe)
-
-    return results
-
-def search_recipe(keyword, search_type="auto"):
-    """
-    搜索菜谱（本地优先，不足时调用API）
-    :param keyword: 关键词
-    :param search_type: 搜索类型（auto/菜名/蔬菜）
-    :return: 搜索结果
-    """
-    # 判断是蔬菜还是菜名
-    if search_type == "auto":
-        # 检查是否在常见蔬菜列表中
-        common_veggies = set()
-        for veggies in SEASONAL_INGREDIENTS.values():
-            common_veggies.update(veggies)
-
-        if keyword in common_veggies or len(keyword) <= 3:
-            search_type = "蔬菜"
-        else:
-            search_type = "菜名"
-
-    # 从本地数据库搜索
-    local_results = search_in_database(keyword, search_type)
-
-    # 判断是否需要API补充
-    required_count = 6 if search_type == "蔬菜" else 2
-
-    if len(local_results) >= required_count:
-        return {
-            "keyword": keyword,
-            "type": search_type,
-            "source": "本地数据库",
-            "results": local_results[:required_count]
-        }
-
-    # 本地不足，调用API
-    api_result = None
-    if search_type == "蔬菜":
-        prompt = f"请给出{keyword}的6种不同做法，每种做法包括：菜名、所需食材（详细列表）、简要步骤（5步以内）。以JSON格式返回。"
-    else:
-        prompt = f"请给出'{keyword}'这道菜的2种常见不同做法，每种包括：做法名称、所需食材（详细列表）、详细步骤。以JSON格式返回。"
-
-    api_response = call_deepseek_api(prompt)
-
-    return {
-        "keyword": keyword,
-        "type": search_type,
-        "source": "本地数据库" if len(local_results) >= required_count else "本地+API",
-        "local_results": local_results,
-        "api_response": api_response,
-        "results": local_results[:required_count]
-    }
-
-# ============== API路由 ==============
-
+# --- 5. API 路由 ---
 @app.route('/api/today', methods=['GET'])
 def get_today_recommendations():
-    """获取今日推荐菜谱"""
-    diet_type = request.args.get('diet_type', '中餐')  # 中餐/地中海
-
-    lunar_info = get_lunar_info()
-    season = get_season()
-
-    # 获取三餐推荐
-    breakfast = recommend_recipes(diet_type, "早餐")
-    lunch = recommend_recipes(diet_type, "午餐")
-    dinner = recommend_recipes(diet_type, "晚餐")
-
+    diet_type = request.args.get('diet_type', '中餐')
     return jsonify({
         "date": datetime.now().strftime("%Y年%m月%d日"),
-        "lunar": lunar_info,
-        "season": season,
-        "diet_type": diet_type,
+        "lunar": get_lunar_info(),
+        "season": get_season(),
         "recommendations": {
-            "breakfast": breakfast,
-            "lunch": lunch,
-            "dinner": dinner
+            "breakfast": recommend_recipes(diet_type, "早餐"),
+            "lunch": recommend_recipes(diet_type, "午餐"),
+            "dinner": recommend_recipes(diet_type, "晚餐")
         }
     })
 
 @app.route('/api/search', methods=['POST'])
-def search():
+def search_recipes():
     """搜索菜谱"""
-    data = request.json
-    keyword = data.get('keyword', '')
-    search_type = data.get('type', 'auto')
+    try:
+        data = request.get_json()
+        keyword = data.get('keyword', '').strip()
 
-    if not keyword:
-        return jsonify({"error": "请输入搜索关键词"}), 400
+        if not keyword:
+            return jsonify({"error": "请输入搜索关键词"}), 400
 
-    result = search_recipe(keyword, search_type)
-    return jsonify(result)
+        # 判断搜索类型（蔬菜或菜名）
+        vegetables = ['白菜', '萝卜', '土豆', '西红柿', '番茄', '黄瓜', '茄子', '豆角', '青椒', '辣椒',
+                     '芹菜', '菠菜', '韭菜', '香菜', '生菜', '油菜', '空心菜', '西兰花', '花菜',
+                     '胡萝卜', '洋葱', '大蒜', '生姜', '南瓜', '冬瓜', '丝瓜', '苦瓜', '豆芽',
+                     '莴笋', '芦笋', '蘑菇', '木耳', '香菇', '金针菇', '平菇', '豆腐', '竹笋']
 
-@app.route('/api/recipes', methods=['GET'])
-def get_all_recipes():
-    """获取所有菜谱（分页）"""
-    page = int(request.args.get('page', 1))
-    per_page = int(request.args.get('per_page', 20))
-    category = request.args.get('category', '')  # 中餐/地中海
+        search_type = '蔬菜' if any(veg in keyword for veg in vegetables) else '菜名'
 
-    filtered = RECIPES
-    if category:
-        filtered = [r for r in RECIPES if r['category'] == category]
+        # 获取分页参数
+        page = int(data.get('page', 1))  # 当前页码，默认第1页
+        page_size = int(data.get('page_size', 3))  # 每页显示数量，默认3个
 
-    start = (page - 1) * per_page
-    end = start + per_page
+        # 本地搜索 - 搜索所有匹配结果
+        all_results = []
+        for recipe in RECIPES:
+            # 在菜名、食材中搜索
+            if (keyword in recipe.get('name', '') or
+                any(keyword in ing for ing in recipe.get('ingredients', []))):
+                all_results.append(recipe)
 
-    return jsonify({
-        "total": len(filtered),
-        "page": page,
-        "per_page": per_page,
-        "recipes": filtered[start:end]
-    })
+        # 计算分页
+        total_count = len(all_results)
+        total_pages = (total_count + page_size - 1) // page_size  # 向上取整
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        results = all_results[start_idx:end_idx]
 
-@app.route('/api/health', methods=['GET'])
-def health_check():
-    """健康检查"""
-    return jsonify({
-        "status": "ok",
-        "total_recipes": len(RECIPES),
-        "chinese_recipes": len([r for r in RECIPES if r['category'] == '中餐']),
-        "mediterranean_recipes": len([r for r in RECIPES if r['category'] == '地中海'])
-    })
+        # 只在第一页且结果不够时调用API
+        api_response = None
+        if page == 1 and total_count < page_size:
+            api_response = call_siliconflow_api(keyword, search_type)
+
+        return jsonify({
+            "keyword": keyword,
+            "type": search_type,
+            "source": "本地数据库" if all_results else "AI推荐",
+            "results": results,
+            "api_response": api_response,
+            "pagination": {
+                "current_page": page,
+                "page_size": page_size,
+                "total_count": total_count,
+                "total_pages": total_pages,
+                "has_more": page < total_pages
+            }
+        })
+
+    except Exception as e:
+        print(f"搜索出错: {e}")
+        return jsonify({"error": "搜索失败，请稍后重试"}), 500
+
+def call_siliconflow_api(keyword, search_type):
+    """调用硅基流动API获取菜谱推荐"""
+    api_key = os.environ.get('SILICONFLOW_API_KEY', '')
+
+    if not api_key:
+        return None
+
+    try:
+        url = "https://api.siliconflow.cn/v1/chat/completions"
+
+        # 构建提示词
+        if search_type == '蔬菜':
+            prompt = f"请推荐3-4道以{keyword}为主料的家常菜，每道菜包含：菜名、食材清单、制作步骤。要求简洁实用，适合家庭制作。"
+        else:
+            prompt = f"请提供{keyword}的详细做法，包含：食材清单、制作步骤。要求步骤清晰，适合家庭制作。"
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "model": "deepseek-ai/DeepSeek-V3",
+            "messages": [
+                {"role": "system", "content": "你是一个专业的中餐厨师，擅长制作家常菜。"},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.7,
+            "max_tokens": 1000
+        }
+
+        response = requests.post(url, json=payload, headers=headers, timeout=30)
+
+        if response.status_code == 200:
+            result = response.json()
+            return result['choices'][0]['message']['content']
+        else:
+            print(f"API调用失败: {response.status_code}")
+            return None
+
+    except requests.exceptions.Timeout:
+        print(f"API调用超时: 请求超过30秒")
+        return "AI服务响应超时，请稍后再试。您可以尝试搜索其他菜谱。"
+    except requests.exceptions.RequestException as e:
+        print(f"API网络错误: {e}")
+        return None
+    except Exception as e:
+        print(f"API调用出错: {e}")
+        return None
+
+@app.route('/api/health')
+def health():
+    return jsonify({"status": "ok", "db_size": len(RECIPES)})
 
 @app.route('/')
 def index():
-    """首页 - 返回前端页面"""
+    # 优先返回 frontend 目录下的 index.html
     return send_from_directory(app.template_folder, 'index.html')
 
 if __name__ == '__main__':
-    print("=" * 50)
-    print("菜谱推荐系统启动中...")
-    print(f"共加载 {len(RECIPES)} 道菜谱")
-    print(f"中餐: {len([r for r in RECIPES if r['category'] == '中餐'])} 道")
-    print(f"地中海: {len([r for r in RECIPES if r['category'] == '地中海'])} 道")
-    print("=" * 50)
-    # 从环境变量读取端口号（用于云平台部署）
+    # 兼容云端端口
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port)

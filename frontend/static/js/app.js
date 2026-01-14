@@ -1,7 +1,11 @@
 // 全局变量
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = '/api';
+//const API_BASE_URL = 'http://localhost:5000/api';
 let currentDietType = '中餐'; // 当前饮食类型
 let currentData = null; // 当前推荐数据
+let currentSearchKeyword = ''; // 当前搜索关键词
+let currentSearchPage = 1; // 当前搜索页码
+let currentSearchData = null; // 当前搜索完整数据
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
@@ -218,11 +222,22 @@ async function performSearch() {
         return;
     }
 
+    // 重置搜索状态
+    currentSearchKeyword = keyword;
+    currentSearchPage = 1;
+
     // 显示搜索结果区域
     showSearchResults();
 
     const searchGrid = document.getElementById('search-grid');
     searchGrid.innerHTML = '<div class="loading">搜索中...</div>';
+
+    await loadSearchResults();
+}
+
+// 加载搜索结果
+async function loadSearchResults(append = false) {
+    const searchGrid = document.getElementById('search-grid');
 
     try {
         const response = await fetch(`${API_BASE_URL}/search`, {
@@ -230,42 +245,74 @@ async function performSearch() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ keyword, type: 'auto' })
+            body: JSON.stringify({
+                keyword: currentSearchKeyword,
+                type: 'auto',
+                page: currentSearchPage,
+                page_size: 3  // 每次加载3个
+            })
         });
 
         const data = await response.json();
-        displaySearchResults(data);
+        currentSearchData = data;
+        displaySearchResults(data, append);
     } catch (error) {
         console.error('搜索失败:', error);
         searchGrid.innerHTML = '<div class="loading" style="color: #f44336;">搜索失败，请重试</div>';
     }
 }
 
+// 加载更多结果
+async function loadMoreResults() {
+    currentSearchPage++;
+
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    loadMoreBtn.textContent = '加载中...';
+    loadMoreBtn.disabled = true;
+
+    await loadSearchResults(true);
+}
+
 // 显示搜索结果
-function displaySearchResults(data) {
+function displaySearchResults(data, append = false) {
     const searchTitle = document.getElementById('search-title');
     const searchGrid = document.getElementById('search-grid');
 
-    // 设置标题
-    const typeText = data.type === '蔬菜' ? '的做法' : '的不同做法';
-    searchTitle.textContent = `"${data.keyword}"${typeText} (来源: ${data.source})`;
+    // 第一页时设置标题
+    if (!append) {
+        const typeText = data.type === '蔬菜' ? '的做法' : '的不同做法';
+        const totalInfo = data.pagination ? ` (共找到${data.pagination.total_count}个结果)` : '';
+        searchTitle.textContent = `"${data.keyword}"${typeText}${totalInfo}`;
+    }
 
     // 显示结果
     if (!data.results || data.results.length === 0) {
+        if (append) return; // 追加模式下没有结果就直接返回
+
+        // 判断是否有API响应（包括超时信息）
+        const hasApiInfo = data.api_response && data.api_response.trim() !== '';
+        const isTimeout = hasApiInfo && data.api_response.includes('超时');
+
         searchGrid.innerHTML = `
             <div class="recipe-detail-card">
                 <h3>未找到相关菜谱</h3>
                 <p style="font-size: 18px; color: #666; margin-top: 10px;">
-                    本地数据库中暂无"${data.keyword}"的菜谱。${data.api_response ? '正在联系API获取...' : '请尝试其他关键词。'}
+                    本地数据库中暂无"${data.keyword}"的菜谱。
                 </p>
-                ${data.api_response ? `<div style="margin-top: 20px; font-size: 17px; line-height: 1.8; white-space: pre-wrap;">${data.api_response}</div>` : ''}
+                ${hasApiInfo ? `
+                    <div style="margin-top: 20px; padding: 15px; background: ${isTimeout ? '#fff3cd' : '#f0f8ff'}; border-radius: 8px; border-left: 4px solid ${isTimeout ? '#ffc107' : '#4CAF50'};">
+                        <p style="font-size: 17px; line-height: 1.8; white-space: pre-wrap; margin: 0;">
+                            ${isTimeout ? '⚠️ ' : '💡 '}${data.api_response}
+                        </p>
+                    </div>
+                ` : '<p style="margin-top: 10px; color: #999;">请尝试其他关键词。</p>'}
             </div>
         `;
         return;
     }
 
     // 渲染结果卡片
-    searchGrid.innerHTML = data.results.map(recipe => `
+    const resultsHTML = data.results.map(recipe => `
         <div class="recipe-detail-card">
             <h3>${recipe.name}</h3>
             <div class="recipe-tags">
@@ -287,16 +334,44 @@ function displaySearchResults(data) {
         </div>
     `).join('');
 
-    // 如果有API响应，追加显示
-    if (data.api_response && data.results.length < (data.type === '蔬菜' ? 6 : 2)) {
-        searchGrid.innerHTML += `
-            <div class="recipe-detail-card" style="background: #f0f8ff;">
-                <h3>💡 AI推荐的更多做法</h3>
+    if (append) {
+        // 追加模式：移除旧的加载更多按钮，添加新结果
+        const oldBtn = document.getElementById('load-more-btn');
+        if (oldBtn) oldBtn.remove();
+        searchGrid.insertAdjacentHTML('beforeend', resultsHTML);
+    } else {
+        // 新搜索：替换内容
+        searchGrid.innerHTML = resultsHTML;
+    }
+
+    // 如果有更多结果，显示"加载更多"按钮
+    if (data.pagination && data.pagination.has_more) {
+        const loadMoreHTML = `
+            <div style="text-align: center; margin: 30px 0;">
+                <button id="load-more-btn" class="btn" style="padding: 12px 40px; font-size: 16px;">
+                    加载更多 (还有${data.pagination.total_count - data.pagination.current_page * data.pagination.page_size}个结果)
+                </button>
+            </div>
+        `;
+        searchGrid.insertAdjacentHTML('beforeend', loadMoreHTML);
+
+        // 绑定加载更多按钮事件
+        document.getElementById('load-more-btn').addEventListener('click', loadMoreResults);
+    }
+
+    // 如果有API响应且是第一页，追加显示
+    if (!append && data.api_response && data.api_response.trim() !== '') {
+        const hasApiInfo = data.api_response && data.api_response.trim() !== '';
+        const isTimeout = hasApiInfo && data.api_response.includes('超时');
+
+        searchGrid.insertAdjacentHTML('beforeend', `
+            <div class="recipe-detail-card" style="background: ${isTimeout ? '#fff3cd' : '#f0f8ff'};">
+                <h3>${isTimeout ? '⚠️ 提示' : '💡 AI推荐的更多做法'}</h3>
                 <div style="font-size: 17px; line-height: 1.8; white-space: pre-wrap;">
                     ${data.api_response}
                 </div>
             </div>
-        `;
+        `);
     }
 }
 
